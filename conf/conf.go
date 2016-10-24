@@ -69,11 +69,6 @@ func Load(filename string) error {
 			return err
 		}
 	}
-	finalOptions, err := json.MarshalIndent(&Options, "", "  ")
-	if err != nil {
-		return err
-	}
-	logrus.Infof("Using options:\n%s\n", string(finalOptions))
 	return nil
 }
 

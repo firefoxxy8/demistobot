@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 	"github.com/demisto/demistobot/conf"
 	"github.com/demisto/demistobot/repo"
 	"github.com/demisto/demistobot/web"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -76,13 +78,15 @@ func main() {
 		logrus.Fatal(err)
 	}
 	logrus.SetLevel(level)
-	logf := os.Stderr
+	var logf io.Writer
+	logf = os.Stderr
 	if conf.Options.Log.Path != "" {
-		logf, err = os.OpenFile(conf.Options.Log.Path, os.O_CREATE|os.O_APPEND, 0640)
-		if err != nil {
-			logrus.Fatal(err)
+		logf = &lumberjack.Logger{
+			Filename:   conf.Options.Log.Path,
+			MaxSize:    10, // megabytes after which new file is created
+			MaxBackups: 3,  // number of backups
+			MaxAge:     0,  // days
 		}
-		defer logf.Close()
 	}
 	logrus.SetOutput(logf)
 	conf.LogWriter = logrus.StandardLogger().Writer()
