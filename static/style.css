@@ -1,0 +1,33 @@
+body {
+  background-color: #618081;
+}
+
+body > .grid {
+  height: 100%;
+}
+
+.image {
+  margin-top: -100px !important;
+}
+
+.column {
+  max-width: 600px;
+}
+
+.demisto-green {
+  color: #dcdcdc !important;
+}
+
+.submit {
+  background-color: #f2ae31 !important;
+  color: #181818 !important;
+}
+
+.submit:hover {
+  background-color: #ffb622 !important;
+}
+
+.header .image {
+  background-color: #618081 !important;
+  width: 100% !important;
+}
