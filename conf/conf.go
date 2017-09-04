@@ -50,6 +50,12 @@ var Options struct {
 		// ClientSecret is used to verify Slack reply
 		ClientSecret string
 	}
+	Google struct {
+		// ClientID ...
+		ClientID string
+		// ClientSecret ...
+		ClientSecret string
+	}
 	// Location of the static resources
 	Static string
 }

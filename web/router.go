@@ -129,6 +129,7 @@ func (r *Router) registerStaticHandlers() {
 	r.Get("/404", r.staticHandlers.ThenFunc(pageHandler("404.html")))
 	r.Get("/banned", r.staticHandlers.ThenFunc(pageHandler("banned.html")))
 	r.Get("/details", r.staticHandlers.ThenFunc(pageHandler("details.html")))
+	r.Get("/google-details", r.staticHandlers.ThenFunc(pageHandler("google-details.html")))
 	r.ServeGzipFiles("/assets/*filepath", http.Dir(public+"assets"))
 }
 
@@ -139,6 +140,9 @@ func (r *Router) registerApplicationHandlers() {
 	r.Get("/auth", r.staticHandlers.ThenFunc(r.appContext.loginOAuth))
 	// Log
 	r.Get("/log", r.authHandlers.ThenFunc(r.appContext.logHandler))
+	// Google OAuth URL
+	r.Get("/google-oauth", r.commonHandlers.ThenFunc(r.appContext.googleOAuth))
+	r.Get("/g", r.staticHandlers.ThenFunc(r.appContext.googleLogin))
 }
 
 func wrapHandler(h http.Handler) httprouter.Handle {

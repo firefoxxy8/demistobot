@@ -1,9 +1,11 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -12,6 +14,7 @@ import (
 	"github.com/demisto/slack"
 	"github.com/wayn3h0/go-uuid"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -30,16 +33,17 @@ func (ac *AppContext) initiateOAuth(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	scopes := []string{"bot", "groups:write", "channels:write"}
 	oconf := &oauth2.Config{
 		ClientID:     conf.Options.Slack.ClientID,
 		ClientSecret: conf.Options.Slack.ClientSecret,
-		Scopes:       []string{"bot", "groups:write", "channels:write"},
+		Scopes:       scopes,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  slackOAuthEndpoint,
 			TokenURL: slackOAuthExchange,
 		},
 	}
-	ac.addState(uu.String())
+	ac.addState(uu.String(), scopes)
 	url := oconf.AuthCodeURL(uu.String())
 	logrus.Debugf("Redirecting to URL - %s", url)
 	http.Redirect(w, r, url, http.StatusFound)
@@ -104,4 +108,70 @@ func (ac *AppContext) loginOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	logrus.Infof("User team [%s], domain [%s], email [%s] logged in\n", o.Team, o.Domain, o.Email)
 	http.Redirect(w, r, fmt.Sprintf("/details?b=%s&t=%s", token.Bot.BotAccessToken, token.AccessToken), http.StatusFound)
+}
+
+const googleRedirectURL = "https://demistobot.demisto.com/g"
+
+func (ac *AppContext) googleOAuth(w http.ResponseWriter, r *http.Request) {
+	// First - check that you are not from a banned country
+	if isBanned(r.RemoteAddr) {
+		http.Redirect(w, r, "/banned", http.StatusFound)
+		return
+	}
+	// Now, generate a random state
+	uu, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+	scopes := strings.Split(r.FormValue("scopes"), ",")
+	if len(scopes) == 0 {
+		WriteError(w, ErrBadRequest)
+		return
+	}
+	oconf := &oauth2.Config{
+		ClientID:     conf.Options.Google.ClientID,
+		ClientSecret: conf.Options.Google.ClientSecret,
+		Scopes:       scopes,
+		Endpoint:     google.Endpoint,
+		RedirectURL:  googleRedirectURL,
+	}
+	ac.addState(uu.String(), scopes)
+	url := oconf.AuthCodeURL(uu.String())
+	logrus.Debugf("Generating Google URL - %s", url)
+	writeJSON(w, map[string]string{"url": url})
+}
+
+func (ac *AppContext) googleLogin(w http.ResponseWriter, r *http.Request) {
+	state := r.FormValue("state")
+	code := r.FormValue("code")
+	errStr := r.FormValue("error")
+	if errStr != "" {
+		WriteError(w, &Error{"oauth_err", 401, "Google OAuth Error", errStr})
+		logrus.Warnf("Got an error from Google - %s", errStr)
+		return
+	}
+	if state == "" || code == "" {
+		WriteError(w, ErrMissingPartRequest)
+		return
+	}
+	s, ok := ac.state(state)
+	if !ok {
+		WriteError(w, ErrBadRequest)
+		return
+	}
+	ac.removeState(state)
+	ctx := context.Background()
+	oconf := &oauth2.Config{
+		ClientID:     conf.Options.Google.ClientID,
+		ClientSecret: conf.Options.Google.ClientSecret,
+		Scopes:       s.scopes,
+		Endpoint:     google.Endpoint,
+		RedirectURL:  googleRedirectURL,
+	}
+	token, err := oconf.Exchange(ctx, code)
+	if err != nil {
+		WriteError(w, &Error{"oauth_err", 401, "Google OAuth Error", err.Error()})
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/google-details?a=%s&r=%s&e=%v", token.AccessToken, token.RefreshToken, token.Expiry.Unix()), http.StatusFound)
 }

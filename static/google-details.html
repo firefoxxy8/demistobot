@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Demisto Google Integration</title>
+    <meta charset="utf-8">
+    <meta name="description" content="demisto integration for Google - OAuth token generator">
+    <meta name="keywords" content="security,incident response,attack playback,forensics">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/semantic-ui/2.2.2/semantic.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+<body>
+<div class="ui middle aligned center aligned grid">
+    <div class="column">
+        <div class="ui demisto-green image header">
+            <img src="/assets/logo.png" class="image"/>
+            <br/><br/>
+            <div class="ui aligned left aligned grid">
+                <div class="ui label">
+                    Access Token:
+                    <div id="access" class="detail"></div>
+                </div>
+                <div class="ui label">
+                    Expiry:
+                    <div id="exp" class="detail"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="errorModal" class="ui small modal">
+    <div class="header">Error</div>
+    <div class="content">
+        <p>Some error occurred</p>
+    </div>
+    <div class="actions">
+        <div class="ui approve button">OK</div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/semantic-ui/2.2.2/semantic.min.js" crossorigin="anonymous"></script>
+<script type="text/javascript">
+  function handleError(status) {
+    $('#errorModal .header').text(status.title);
+    $('#errorModal .content p').text(status.detail);
+    $('#errorModal').modal('show');
+  }
+
+  function getParam(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
+  function populateTokens() {
+    var url = window.location.href,
+      access = getParam('a', url),
+      exp = getParam('e', url);
+    if (access && exp) {
+      $('#access').text(access);
+      $('#exp').text(new Date(exp * 1000));
+    } else {
+      handleError({title: 'Not found', detail: 'Tokens not found in the URL - something went wrong'});
+    }
+  }
+  $(document).ready(function () {
+    populateTokens();
+  });
+</script>
+</body>
+</html>

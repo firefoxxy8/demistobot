@@ -7,30 +7,35 @@ import (
 	"github.com/demisto/demistobot/repo"
 )
 
+type requestState struct {
+	scopes []string
+	t      time.Time
+}
+
 // AppContext holds the web context for the handlers
 type AppContext struct {
 	r      *repo.Repo
 	mux    sync.Mutex
-	states map[string]time.Time
+	states map[string]requestState
 	stop   chan bool
 }
 
 // NewContext creates a new context
 func NewContext(r *repo.Repo) *AppContext {
-	ac := &AppContext{r: r, states: make(map[string]time.Time), stop: make(chan bool, 1)}
+	ac := &AppContext{r: r, states: make(map[string]requestState), stop: make(chan bool, 1)}
 	go ac.cleanStates()
 	return ac
 }
 
-func (ac *AppContext) addState(state string) {
+func (ac *AppContext) addState(state string, scopes []string) {
 	ac.mux.Lock()
 	defer ac.mux.Unlock()
 
-	ac.states[state] = time.Now()
+	ac.states[state] = requestState{scopes: scopes, t: time.Now()}
 }
 
 // state retrieval
-func (ac *AppContext) state(state string) (time.Time, bool) {
+func (ac *AppContext) state(state string) (requestState, bool) {
 	ac.mux.Lock()
 	defer ac.mux.Unlock()
 
@@ -54,7 +59,7 @@ func (ac *AppContext) doClean() {
 
 	cutoff := time.Now().Add(-10 * time.Minute)
 	for k, v := range ac.states {
-		if v.Before(cutoff) {
+		if v.t.Before(cutoff) {
 			d = append(d, k)
 		}
 	}
