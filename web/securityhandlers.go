@@ -5,11 +5,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strings"
 	"time"
-
-	"math"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/demisto/demistobot/conf"
@@ -209,7 +208,6 @@ func (ac *AppContext) alexaLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ac.removeState(state)
 	http.Redirect(w, r, fmt.Sprintf("/alexa-details?redirect_uri=%s&state=%s", redirectURI, state), http.StatusFound)
 }
 

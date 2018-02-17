@@ -86,14 +86,14 @@ func (r *Router) Delete(path string, handler http.Handler) {
 
 func handlePublicPath(pubPath string) {
 	switch {
-	// absolute path
 	case len(pubPath) > 1 && (pubPath[0] == '/' || pubPath[0] == '\\'):
+		// absolute path
 		public = pubPath
-		// absolute path win
 	case len(pubPath) > 2 && pubPath[1] == ':':
+		// absolute path win
 		public = pubPath
-		// relative
 	case len(pubPath) > 1 && pubPath[0] == '.':
+		// relative
 		public = pubPath
 	default:
 		public = "./" + pubPath
