@@ -56,6 +56,10 @@ var Options struct {
 		// ClientSecret ...
 		ClientSecret string
 	}
+	Alexa struct {
+		// ClientID ...
+		ClientID string
+	}
 	// Location of the static resources
 	Static string
 }

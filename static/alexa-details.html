@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Demisto Alexa Integration</title>
+    <meta charset="utf-8">
+    <meta name="description" content="demisto integration for Google - OAuth token generator">
+    <meta name="keywords" content="security,incident response,attack playback,forensics">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/semantic-ui/2.2.2/semantic.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+<body>
+<div class="ui middle aligned center aligned grid">
+    <div class="column">
+        <div class="ui demisto-green image header">
+            <div class="ui center aligned grid">
+                <div class="row">
+                    <div class="sixteen wide column">
+                        <img src="/assets/logo.png" class="ui centered medium image"/>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="sixteen wide column">
+                        <img src="/assets/dbot.png" class="ui small image" style="position: absolute; top: 30px; left: 35px"/>
+                        <img src="/assets/alexa.png" class="ui small image" style="position: absolute; left: 190px; top: 27px;"/>
+                    </div>
+                </div>
+            </div>
+            <br/><br/>
+            <div class="ui center aligned grid" style="position: absolute; margin-top: 40px">
+                <form class="ui form" id="demisto-alexa-form" action="/alexa-redirect" method="post">
+                    <input id="redirectUrl" name="redirectUrl" hidden />
+                    <input id="state" name="state" hidden />
+                    <input name="serverUrl" type="url" placeholder="Demisto Server URL" style="margin-bottom: 12px" />
+                    <input name="username" type="text" placeholder="Administrator username" style="margin-bottom: 12px" />
+                    <input name="password" type="password" placeholder="Administrator password" />
+                    <button
+                        type="submit"
+                        class="ui button submit"
+                        style="margin-top: 12px; width: 100%"
+                        form="demisto-alexa-form"
+                    >
+                        Make DBot and Alexa friends!
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="errorModal" class="ui small modal demisto-modal">
+    <div class="header">Error</div>
+    <div class="content">
+        <p>Some error occurred</p>
+    </div>
+    <div class="actions">
+        <div class="ui approve button">OK</div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/semantic-ui/2.2.2/semantic.min.js" crossorigin="anonymous"></script>
+<script type="text/javascript">
+  function handleError(status) {
+    $('#errorModal .header').text(status.title);
+    $('#errorModal .content p').text(status.detail);
+    $('#errorModal').modal('show');
+  }
+
+  function getParam(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
+  function init() {
+    var url = window.location.href;
+    var redirectUri = getParam('redirect_uri', url);
+    var state = getParam('state', url);
+    if (!redirectUri || !state) {
+      handleError({title: 'Not found', detail: 'Alexa params not found in the URL - something went wrong'});
+    } else {
+        $('#redirectUrl').val(redirectUri);
+        $('#state').val(state);
+    }
+  }
+
+  $(document).ready(function () {
+    init();
+  });
+</script>
+</body>
+</html>
