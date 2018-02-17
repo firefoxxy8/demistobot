@@ -56,6 +56,12 @@ var Options struct {
 		// ClientSecret ...
 		ClientSecret string
 	}
+	Alexa struct {
+		// ClientID ...
+		ClientID string
+		// ClientSecret ...
+		ClientSecret string
+	}
 	// Location of the static resources
 	Static string
 }
@@ -85,4 +91,5 @@ func Default() {
 	Options.User.Username = "admin"
 	Options.User.Password = "password"
 	Options.Log.Level = "debug"
+	Options.Alexa.ClientID = "alexa-dbot-skill"
 }

@@ -1,5 +1,6 @@
 body {
-  background-color: #618081;
+  background-color: #000F1A;
+  color: rgba(255, 255, 255, 0.75) !important;
 }
 
 body > .grid {
@@ -14,20 +15,24 @@ body > .grid {
   max-width: 600px;
 }
 
-.demisto-green {
-  color: #dcdcdc !important;
+.h1, .h2, .h3, .h4 {
+  color: rgba(255, 255, 255, 0.75) !important;
 }
 
-.submit {
-  background-color: #f2ae31 !important;
+.modal {
   color: #181818 !important;
 }
 
-.submit:hover {
-  background-color: #ffb622 !important;
+.demist-label,
+.submit {
+  background-color: #00eB9a !important;
+  color: #181818 !important;
 }
 
-.header .image {
-  background-color: #618081 !important;
-  width: 100% !important;
+.demist-label {
+  margin-bottom: 12px !important;
+}
+
+.submit:hover {
+  background-color: #00cc85 !important;
 }

@@ -2,15 +2,19 @@ package web
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"math"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/demisto/demistobot/conf"
 	"github.com/demisto/demistobot/domain"
+	"github.com/demisto/demistobot/util"
 	"github.com/demisto/slack"
 	"github.com/wayn3h0/go-uuid"
 	"golang.org/x/oauth2"
@@ -107,7 +111,7 @@ func (ac *AppContext) loginOAuth(w http.ResponseWriter, r *http.Request) {
 		logrus.WithError(err).Warnf("Unable to save history for team [%s], domain [%s], email [%s]", o.Team, o.Domain, o.Email)
 	}
 	logrus.Infof("User team [%s], domain [%s], email [%s] logged in\n", o.Team, o.Domain, o.Email)
-	http.Redirect(w, r, fmt.Sprintf("/details?b=%s&t=%s", token.Bot.BotAccessToken, token.AccessToken), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("/slack-details?b=%s&t=%s", token.Bot.BotAccessToken, token.AccessToken), http.StatusFound)
 }
 
 const googleRedirectURL = "https://demistobot.demisto.com/g"
@@ -174,4 +178,92 @@ func (ac *AppContext) googleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, fmt.Sprintf("/google-details?a=%s&r=%s&e=%v", token.AccessToken, token.RefreshToken, token.Expiry.Unix()), http.StatusFound)
+}
+
+func (ac *AppContext) alexaLogin(w http.ResponseWriter, r *http.Request) {
+	if isBanned(r.RemoteAddr) {
+		http.Redirect(w, r, "/banned", http.StatusFound)
+		return
+	}
+
+	clientID := r.FormValue("client_id")
+	responseType := r.FormValue("response_type")
+	errStr := r.FormValue("error")
+	state := r.FormValue("state")
+	redirectURI := r.FormValue("redirect_uri")
+	scope := r.FormValue("scope")
+
+	if errStr != "" {
+		WriteError(w, &Error{"oauth_err", 401, "Alexa OAuth Error", errStr})
+		logrus.Warnf("Got an error from Google - %v", errStr)
+		return
+	}
+
+	if scope == "" || clientID == "" || state == "" || responseType == "" || redirectURI == "" {
+		WriteError(w, ErrMissingPartRequest)
+		return
+	}
+
+	if clientID != conf.Options.Alexa.ClientID || !strings.HasPrefix(redirectURI, "https://pitangui.amazon.com") || responseType != "token" || scope != "demisto_alexa_skill" {
+		WriteError(w, ErrAuth)
+		return
+	}
+
+	ac.removeState(state)
+	http.Redirect(w, r, fmt.Sprintf("/alexa-details?redirect_uri=%s&state=%s", redirectURI, state), http.StatusFound)
+}
+
+func (ac *AppContext) alexaRedirect(w http.ResponseWriter, r *http.Request) {
+	if isBanned(r.RemoteAddr) {
+		http.Redirect(w, r, "/banned", http.StatusFound)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse alexa form body")
+		WriteError(w, ErrBadRequest)
+		return
+	}
+
+	state := r.FormValue("state")
+	redirectURI := r.FormValue("redirectUrl")
+	serverURL := r.FormValue("serverUrl")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	if state == "" || redirectURI == "" || serverURL == "" || username == "" || password == "" {
+		WriteError(w, ErrMissingPartRequest)
+		return
+	}
+
+	if !strings.HasPrefix(redirectURI, "https://pitangui.amazon.com") {
+		WriteError(w, ErrMissingPartRequest)
+		return
+	}
+
+	// Generate API key
+	uu, err := uuid.NewRandom()
+	if err != nil {
+		logrus.WithError(err).Error("Failed generating api key")
+		WriteError(w, ErrBadRequest)
+		return
+	}
+	apiName := fmt.Sprintf("alexa_%s", time.Now().Format(time.RFC822))
+	apiName = apiName[0:int(math.Min(float64(len(apiName)), 30))]
+	apiKey := uu.String()
+
+	// Create API key in the provided demisto server
+	statusCode, _ := demisto.DoRequest(serverURL, username, password, "apikeys", "POST", fmt.Sprintf(`{"name":"%s","key":"%s"}`, apiName, apiKey))
+
+	if statusCode != http.StatusOK {
+		logrus.Errorf("Failed creating API Key in Demisto, status code: %v", statusCode)
+		WriteError(w, ErrBadRequest)
+		return
+	}
+
+	// Redirect back to alexa with the demisto URL and API Key as the token (base64 encoded)
+	accessToken := fmt.Sprintf("%s|||%s", serverURL, apiKey)
+	encodedAccessToken := base64.StdEncoding.EncodeToString([]byte(accessToken))
+	http.Redirect(w, r, fmt.Sprintf("%s#state=%s&access_token=%s&token_type=Bearer", redirectURI, state, encodedAccessToken), http.StatusSeeOther)
 }

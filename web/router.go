@@ -89,10 +89,10 @@ func handlePublicPath(pubPath string) {
 	// absolute path
 	case len(pubPath) > 1 && (pubPath[0] == '/' || pubPath[0] == '\\'):
 		public = pubPath
-	// absolute path win
+		// absolute path win
 	case len(pubPath) > 2 && pubPath[1] == ':':
 		public = pubPath
-	// relative
+		// relative
 	case len(pubPath) > 1 && pubPath[0] == '.':
 		public = pubPath
 	default:
@@ -128,8 +128,9 @@ func (r *Router) registerStaticHandlers() {
 	r.Get("/style.css", r.staticHandlers.ThenFunc(pageHandler("style.css")))
 	r.Get("/404", r.staticHandlers.ThenFunc(pageHandler("404.html")))
 	r.Get("/banned", r.staticHandlers.ThenFunc(pageHandler("banned.html")))
-	r.Get("/details", r.staticHandlers.ThenFunc(pageHandler("details.html")))
+	r.Get("/slack-details", r.staticHandlers.ThenFunc(pageHandler("slack-details.html")))
 	r.Get("/google-details", r.staticHandlers.ThenFunc(pageHandler("google-details.html")))
+	r.Get("/alexa-details", r.staticHandlers.ThenFunc(pageHandler("alexa-details.html")))
 	r.ServeGzipFiles("/assets/*filepath", http.Dir(public+"assets"))
 }
 
@@ -143,6 +144,8 @@ func (r *Router) registerApplicationHandlers() {
 	// Google OAuth URL
 	r.Get("/google-oauth", r.commonHandlers.ThenFunc(r.appContext.googleOAuth))
 	r.Get("/g", r.staticHandlers.ThenFunc(r.appContext.googleLogin))
+	r.Get("/alexa", r.staticHandlers.ThenFunc(r.appContext.alexaLogin))
+	r.Post("/alexa-redirect", r.staticHandlers.ThenFunc(r.appContext.alexaRedirect))
 }
 
 func wrapHandler(h http.Handler) httprouter.Handle {
