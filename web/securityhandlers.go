@@ -261,7 +261,7 @@ func (ac *AppContext) alexaRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect back to alexa with the demisto URL and API Key as the token (base64 encoded)
-	accessToken := fmt.Sprintf("%s|||%s", serverURL, apiKey)
+	accessToken := fmt.Sprintf("%s|||%s|||%s", serverURL, apiKey, username)
 	encodedAccessToken := base64.StdEncoding.EncodeToString([]byte(accessToken))
 	http.Redirect(w, r, fmt.Sprintf("%s#state=%s&access_token=%s&token_type=Bearer", redirectURI, state, encodedAccessToken), http.StatusSeeOther)
 }
