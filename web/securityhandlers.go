@@ -252,7 +252,7 @@ func (ac *AppContext) alexaRedirect(w http.ResponseWriter, r *http.Request) {
 	apiKey := uu.String()
 
 	// Create API key in the provided demisto server
-	statusCode, _ := demisto.DoRequest(serverURL, username, password, "apikeys", "POST", fmt.Sprintf(`{"name":"%s","key":"%s"}`, apiName, apiKey))
+	statusCode, _ := demisto.DoRequest(serverURL, username, password, "apikeys", "POST", fmt.Sprintf(`{"name":"%s","apikey":"%s"}`, apiName, apiKey))
 
 	if statusCode != http.StatusOK {
 		logrus.Errorf("Failed creating API Key in Demisto, status code: %v", statusCode)
